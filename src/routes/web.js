@@ -35,7 +35,7 @@ router.post('/save-address/:networkType', authMiddleware,UserController.saveWall
 
 
 router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
-router.get('/get_vip', authMiddleware,tradeController.get_vip);
+router.get('/get_comm', authMiddleware,UserController.get_comm);
 router.get('/close-trade', authMiddleware,tradeController.stopTrade);
 router.get('/fetchtrade', authMiddleware, tradeController.tradecount);
 router.get('/fetchcontract', authMiddleware, tradeController.fetchcontract);
@@ -51,7 +51,7 @@ router.post('/changePassword', authMiddleware, UserController.ChangePassword);
 router.get('/fetchservers', authMiddleware, UserController.fetchservers);
 router.post('/changedetails', authMiddleware, UserController.changedetails);
 router.get('/checkusers', authMiddleware, UserController.checkUsers);
-router.post('/claimTask', authMiddleware, UserController.claimTask);
+router.post('/claimRRB', authMiddleware, UserController.claimRRB);
 router.get('/checkClaimed', authMiddleware,UserController.checkClaimed);
 router.get('/vipterms', authMiddleware, UserController.vipTerms);
 router.post('/claimVip', authMiddleware, UserController.ClaimVip);

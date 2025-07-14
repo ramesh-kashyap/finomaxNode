@@ -86,8 +86,10 @@ const User = sequelize.define('User', {
         type: DataTypes.DOUBLE(10, 2),  // Double type with 2 decimal places
         allowNull: false,
         defaultValue: 0.00
-    }
-    // balance: { type: DataTypes.FLOAT, defaultValue: 0 },
+    },
+    created_at: { type: DataTypes.STRING,
+        allowNull: true
+    },
 }, {
     tableName: 'users',
     timestamps: false

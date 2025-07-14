@@ -1698,7 +1698,7 @@ const qualityLevelTeam = async (userId, level = 3) => {
  
   }
  
-   const claimTask = async (req, res) => {
+   const claimRRB = async (req, res) => {
   try {
     const { taskReward } = req.body;  // ✅ Destructure properly
  
@@ -1716,8 +1716,10 @@ const qualityLevelTeam = async (userId, level = 3) => {
     const taskIncome = await Income.create({
       user_id: userId,
       comm: taskReward,
-      remarks: "Task Income",
-        ttime:      nowTS
+      amt: taskReward,
+      user_id_fk: user.username,
+      remarks: "Rapid Rise Bonus",
+      ttime: nowTS
     });
  
     return res.status(200).json({ success: true, taskIncome });
@@ -1728,59 +1730,164 @@ const qualityLevelTeam = async (userId, level = 3) => {
 };
  
  
-  const checkClaimed = async (req, res) => {
-  try {
-    const userId = req.user?.id;
 
+    
+ 
+async function checkClaimed(req, res) {
+  const userId = req.user?.id;
     if (!userId) {
-      return res.status(200).json({ success: false, message: "User not authenticated!" });
+      return res.status(401).json({ success: false, message: "User not authenticated!" });
     }
-
-    // Fetch user
+ 
     const user = await User.findOne({ where: { id: userId } });
     if (!user) {
-      return res.status(200).json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found!" });
     }
-
-    // Get Rapid Rise Bonus income
-    const alreadyReceived = await Income.findAll({
-      where: {
-        user_id: userId,
-        remarks: "Rapid Rise Bonus"
-      },
-      order: [['created_at', 'DESC']]
-    });
-
-    // Get team with package 100
-    const team = await User.findAll({
-      where: { sponsor: userId, active_status: 'Active', package: 100 }
-    });
-
-    // Calculate bonus summary
-    const totalBonus = alreadyReceived.reduce((sum, entry) => sum + parseFloat(entry.amount || 0), 0);
-    const bonusCount = alreadyReceived.length;
-
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        created_at: user.created_at,
-        sponsor: user.sponsor
-      },
-      rapidRiseBonus: {
-        totalBonus,
-        bonusCount,
-        details: alreadyReceived
-      },
-      teamSize: team.length
-    });
-  } catch (error) {
-    console.error("Something went wrong:", error);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  const bonusTiers = [
+    { teamSize: 2, days: 2, bonus: 15 },
+    { teamSize: 5, days: 7, bonus: 35 },
+    { teamSize: 10, days: 20, bonus: 50 },
+    { teamSize: 15, days: 30, bonus: 75 },
+    { teamSize: 20, days: 40, bonus: 100 },
+    { teamSize: 25, days: 50, bonus: 125 },
+    { teamSize: 30, days: 60, bonus: 150 },
+    { teamSize: 50, days: 100, bonus: 300 },
+    { teamSize: 75, days: 150, bonus: 500 },
+    { teamSize: 100, days: 200, bonus: 1000 },
+  ];
+ 
+  const results = [];
+ 
+  // If adate is null or invalid
+  if (!user.adate || !moment(user.adate).isValid()) {
+    for (const tier of bonusTiers) {
+      results.push({
+        tier: `Team of ${tier.teamSize} in ${tier.days} days`,
+        teamSizeRequired: tier.teamSize,
+        qualificationPeriod: `${tier.days} days`,
+        bonus: `$${tier.bonus}`,
+        activeReferrals: 0,
+        qualified: false,
+        timeLeft: "0",
+        claimed: false
+      });
+    }
+    return results;
   }
-};
+ 
+  // Proceed if adate is valid
+  const adate = moment(user.adate).startOf('day');
+  const now = moment();
+ 
+  for (const tier of bonusTiers) {
+    const endDate = moment(user.adate).add(tier.days, 'days').endOf('day');
+ 
+    const activeReferralCount = await User.count({
+      where: {
+        sponsor: user.id,
+        active_status: 'Active',
+        package: { [Op.gte]: 100 },
+        adate: {
+          [Op.between]: [adate.toDate(), endDate.toDate()],
+        },
+      },
+    });
+ 
+    let timeLeft;
+    if (now.isBefore(endDate)) {
+      const duration = moment.duration(endDate.diff(now));
+      timeLeft = {
+        days: duration.days(),
+        hours: duration.hours(),
+        minutes: duration.minutes(),
+        seconds: duration.seconds(),
+      };
+    } else {
+      timeLeft = "Expired";
+    }
+    const incomeRecord = await Income.findOne({
+      where: {
+        user_id: user.id,
+        remarks: "Rapid Rise Bonus",
+        comm: tier.bonus, // Adjust if you're using another field
+      },
+    });
+ 
+    results.push({
+      // tier: `Team of ${tier.teamSize} in ${tier.days} days`,
+      team:tier.teamSize,
+      days:tier.days,
+      teamSizeRequired: tier.teamSize,
+      qualificationPeriod: `${tier.days} days`,
+      bonus: `${tier.bonus}`,
+      activeReferrals: activeReferralCount,
+      qualified: activeReferralCount >= tier.teamSize,
+      timeLeft,
+      claimed: !!incomeRecord
+    });
+  }
+ 
+ 
+  // return results;
+  return res.status(200).json({ success: true, results });
+}
+ 
+ async function get_comm(req, res) {
+  const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "User not authenticated!" });
+    }
+ 
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found!" });
+    }
+  const bonusTiers = [
+    { teamSize: 20, bonus: 50 },
+    { teamSize: 50, bonus: 75 },
+    { teamSize: 100, bonus: 100 },
+    { teamSize: 300, bonus: 200 },
+    { teamSize: 500, bonus: 300 },
+    { teamSize: 1000, bonus: 500 },
+    { teamSize: 5000, bonus: 1500 },
+    { teamSize: 10000, bonus: 2500 },
+    { teamSize: 25000, bonus: 7500 },
+    { teamSize: 50000, bonus: 15000 },
+    { teamSize: 100000, bonus: 50000 },
+    { teamSize: 250000, bonus: 100000 },
+  ];
+  const results = [];
+  for (const tier of bonusTiers) {
+ 
+    const activeReferralCount = await User.count({
+      where: {
+        sponsor: user.id,
+        active_status: 'Active',
+        package: { [Op.gte]: 100 },
+      },
+    });
+    const incomeRecord = await Income.findOne({
+      where: {
+        user_id: user.id,
+        remarks: "Rapid Rise Bonus",
+        comm: tier.bonus, // Adjust if you're using another field
+      },
+    });
+ 
+    results.push({
+      team:tier.teamSize,
+      teamSizeRequired: tier.teamSize,
+      bonus: `${tier.bonus}`,
+      activeReferrals: activeReferralCount,
+      qualified: activeReferralCount >= tier.teamSize,
+      claimed: !!incomeRecord
+    });
+  }
+ 
+ 
+  // return results;
+  return res.status(200).json({ success: true, results });
+}
 
  
         const ClaimVip = async (req, res) => {
@@ -1840,4 +1947,4 @@ const qualityLevelTeam = async (userId, level = 3) => {
   }
 };
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimTask,checkClaimed,ClaimVip,vipTerms};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms, get_comm};
