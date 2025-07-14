@@ -1870,7 +1870,7 @@ async function checkClaimed(req, res) {
       where: {
         user_id: user.id,
         remarks: "Rapid Rise Bonus",
-        comm: tier.bonus, // Adjust if you're using another field
+        comm: tier.bonus, // Adjust if you're using another fiel
       },
     });
  
