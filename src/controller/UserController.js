@@ -1947,4 +1947,34 @@ async function checkClaimed(req, res) {
   }
 };
 
+<<<<<<< HEAD
 module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms, get_comm};
+=======
+
+
+const GetPowerTeam = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "Unauthorized user" });
+    }
+
+    const user = await User.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not found!" });
+    }
+
+    // Success response (you can customize this part)
+    return res.status(200).json({ success: true, message: "User found", data: user });
+
+  } catch (error) {
+    console.error("Failed to get power team:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimTask,checkClaimed,ClaimVip,vipTerms,GetPowerTeam};
+>>>>>>> 606b8e5 (dd)

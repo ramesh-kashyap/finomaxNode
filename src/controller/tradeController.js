@@ -197,7 +197,7 @@ const tradeOnJson = async (req, res) => {
     const balance   = await getBalance(user.id);
     // console.log('balance'+balance);
 
-    if (balance < 30) {
+    if (balance < 50) {
       return res.status(400).json({
         success: false,
         code: 'INSUFFICIENT_FUNDS',
