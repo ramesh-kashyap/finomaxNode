@@ -82,6 +82,19 @@ const User = sequelize.define('User', {
         allowNull: true
     }
 ,
+
+  power_leg: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+
+
+      vicker_leg: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+
+
     package: {
         type: DataTypes.DOUBLE(10, 2),  // Double type with 2 decimal places
         allowNull: false,

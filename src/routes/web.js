@@ -69,6 +69,8 @@ router.get('/serverc', authMiddleware, UserController.serverc);
 router.post('/getTradeIncomes', authMiddleware, UserController.tradeinc);
 router.get('/totalRef', authMiddleware, UserController.totalRef);
 router.post('/ChangeMail', authMiddleware,authController.changeMail);
+router.get('/powerteam', authMiddleware, UserController.GetPowerTeam);
+
  
 
 router.post('/txnPassword',  UserController.ChangePassword);

@@ -21,31 +21,49 @@ async function getVip(userId) {
         const gen1Count = await User.count({
             where: {
                 id: genTeam[1],
-                active_status: "Active"
+                active_status: "Active",
+                package : {[Op.gte]:100}
             }
         });
 
         const gen2_3Count = await User.count({
             where: {
                 id: [...genTeam[2], ...genTeam[3]],
-                active_status: "Active"
+                active_status: "Active",
+                package : {[Op.gte]:100}
             }
+
+
+
+            
         });
 
-        const userBalance = await getBalance(userId);
+
+
+
+
+        const userBalance = await getDeposit(userId);
+
+        
         let vipLevel = 0;
 
-        if (userBalance >= 30) {
+        if (userBalance >= 50) {
             vipLevel = 1;
         }
-        if (userBalance >= 500 && gen1Count >= 3 && gen2_3Count >= 6) {
+        if (userBalance >= 501 && gen1Count >= 3 && gen2_3Count >= 6) {
             vipLevel = 2;
         }
-        if (userBalance >= 2000 && gen1Count >= 10 && gen2_3Count >= 24) {
+        if (userBalance >= 2001 && gen1Count >= 10 && gen2_3Count >= 25) {
             vipLevel = 3;
         }
-        if (userBalance >= 5000 && gen1Count >= 15 && gen2_3Count >= 48) {
+        if (userBalance >= 5001 && gen1Count >= 20 && gen2_3Count >= 75) {
             vipLevel = 4;
+        }
+         if (userBalance >= 10001 && gen1Count >=25 && gen2_3Count >= 125) {
+            vipLevel = 5;
+        }
+         if (userBalance >= 25000 && gen1Count >=30 && gen2_3Count >= 250) {
+            vipLevel = 6;
         }
         return vipLevel;
 
@@ -86,16 +104,10 @@ async function getBalance(userId) {
     if (!user) return 0;
 
     // 1) grab the raw sums (could be null)
-    const [ totalCommissionRaw, investmentRaw, RegisterBonus, totalWithdrawRaw ] = 
+    const [ totalCommissionRaw, totalWithdrawRaw ] = 
       await Promise.all([
         Income.sum('comm', {
           where: { user_id: userId }
-        }),
-        Investment.sum('amount', {
-          where: { user_id: userId, status: 'Active' }
-        }),
-         BuyFund.sum('amount', {
-          where: { user_id: userId, status: 'Approved' }
         }),
         Withdraw.sum('amount', {
           where: {
@@ -103,16 +115,17 @@ async function getBalance(userId) {
             status:   { [Op.ne]: 'Failed' }
           }
         })
+
+ 
+
       ]);
 
     // 2) coerce to Number, defaulting null/undefined → 0
     const totalCommission = Number(totalCommissionRaw  ?? 0);
-    const investment     = Number(investmentRaw      ?? 0);
-    const RegisterBnus     = Number(RegisterBonus      ?? 0);
     const totalWithdraw  = Number(totalWithdrawRaw  ?? 0);
 
     // 3) Now the math will never be NaN
-    const totalBalance = (totalCommission + investment +RegisterBnus) - totalWithdraw;
+    const totalBalance = (totalCommission) - totalWithdraw;
 
     // console.log("Balance:", totalBalance);
     return totalBalance.toFixed(3);
@@ -122,6 +135,31 @@ async function getBalance(userId) {
     return 0;
   }
 }
+
+
+
+async function getDeposit(userId) {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return 0;
+
+   const investmentRaw = await Investment.sum('amount', {
+          where: { user_id: userId, status: 'Active' }
+        }); 
+
+    const investment     = Number(investmentRaw ?? 0);
+    // 3) Now the math will never be NaN
+    const totalBalance = investment;
+
+    // console.log("Balance:", investmentRaw);
+    return totalBalance.toFixed(3);
+  }
+  catch (error) {
+    console.error("Error in getBalance:", error);
+    return 0;
+  }
+}
+
 
 async function getPercentage(vipLevel) {
     try {
@@ -291,4 +329,4 @@ async function addLevelIncome(userId, amount) {
 }
 
 
-module.exports = { getVip, myLevelTeamCount, getBalance,getPercentage,addLevelIncome,sendEmail ,getQuantifition,sendEmailRegister};
+module.exports = { getVip, myLevelTeamCount, getBalance,getDeposit,getPercentage,addLevelIncome,sendEmail ,getQuantifition,sendEmailRegister};
