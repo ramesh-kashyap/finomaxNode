@@ -1857,19 +1857,12 @@ async function checkClaimed(req, res) {
     { teamSize: 250000, bonus: 100000 },
   ];
   const results = [];
+  const activeReferralCount = Math.min(user.power_leg || 0, user.vicker_leg || 0);
   for (const tier of bonusTiers) {
- 
-    const activeReferralCount = await User.count({
-      where: {
-        sponsor: user.id,
-        active_status: 'Active',
-        package: { [Op.gte]: 100 },
-      },
-    });
     const incomeRecord = await Income.findOne({
       where: {
         user_id: user.id,
-        remarks: "Rapid Rise Bonus",
+        remarks: "Community Building Reward",
         comm: tier.bonus, // Adjust if you're using another fiel
       },
     });
@@ -1907,8 +1900,10 @@ async function checkClaimed(req, res) {
           // ✅ Correct usage of Income.create
           const taskIncome = await Income.create({
             user_id: userId,
+            user_id_fk: user.username,
             comm: VipReward,
-            remarks: "Upgrade Income",
+            amt: VipReward,
+            remarks: "Community Building Reward",
              ttime:      nowTS
           });
       
