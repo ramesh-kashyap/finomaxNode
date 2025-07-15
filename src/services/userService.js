@@ -188,16 +188,16 @@ async function sendEmail(email, subject, data) {
     try {
         // ✅ Create a transporter using cPanel SMTP
         const transporter = nodemailer.createTransport({
-            host: "mail.zyloq.app", // Replace with your cPanel SMTP host
+            host: "mail.finomax.xyz", // Replace with your cPanel SMTP host
             port: 465, // Use 465 for SSL, 587 for TLS
             secure: true, // true for 465, false for 587
             auth: {
-                user: "info@zyloq.app", // Your email
-                pass: "]oKr7fXdaR4ERGa&", // Your email password
+                user: "info@finomax.xyz", // Your email
+                pass: "finomax@7$", // Your email password
             },
         });
         const mailOptions = {
-            from: '"Zylo Ai" <info@zyloq.app>', // Replace with your email
+            from: '"Finomax" <info@finomax.xyz>', // Replace with your email
             to: email,
             subject: subject,
             html: `<p>Hi ${data.name},</p>
@@ -215,20 +215,20 @@ async function sendEmailRegister(email, subject, data) {
     try {
         // ✅ Create a transporter using cPanel SMTP
         const transporter = nodemailer.createTransport({
-            host: "mail.zyloq.app", // Replace with your cPanel SMTP host
+            host: "mail.finomax.xyz", // Replace with your cPanel SMTP host
             port: 465, // Use 465 for SSL, 587 for TLS
             secure: true, // true for 465, false for 587
             auth: {
-                user: "info@zyloq.app", // Your email
-                pass: "]oKr7fXdaR4ERGa&", // Your email password
+                user: "info@finomax.xyz", // Your email
+                pass: "finomax@7$", // Your email password
             },
         });
         const mailOptions = {
-            from: '"Zylo Ai" <info@zyloq.app>', // Replace with your email
+            from: '"Finomax" <info@finomax.xyz>', // Replace with your email
             to: email,
             subject: subject,
             html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; border: 1px solid #ddd; border-radius: 10px;">
-                  <h2 style="color: #333; text-align: center;">Welcome to ZyloAi!</h2>
+                  <h2 style="color: #333; text-align: center;">Welcome to Finomax!</h2>
                 
                   <p>Hi <strong>${data.name}</strong>,</p>
                 
@@ -241,7 +241,7 @@ async function sendEmailRegister(email, subject, data) {
                 
                   <p style="margin-top: 20px;">You can now log in and start using your account.</p>
                 
-                  <p style="margin-top: 30px;">Best regards,<br><strong>ZyloAi Team</strong></p>
+                  <p style="margin-top: 30px;">Best regards,<br><strong>Finomax Team</strong></p>
                 
                   <hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;" />
                   <p style="font-size: 12px; color: #888888;">If you did not request this registration, please contact us immediately.</p>

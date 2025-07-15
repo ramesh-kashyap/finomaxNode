@@ -87,13 +87,13 @@ const register = async (req, res) => {
 // Call bonus logic correctly
 await registerbonus(createdUser);
 
- const emailSent =  await sendEmailRegister(email, "Welcome to ZyloAi - Your Login Details", {
+ const emailSent =  await sendEmailRegister(email, "Welcome to Finomax - Your Login Details", {
             name: name || "User",
             password: password       
            });
            
            
-      await addNotification(createdUser.id, 'Welcome to Zylo AI', 'Welcome aboard! Begin your journey with Zylo AI, unlock exciting rewards, and connect with our vibrant community. Our support team is always here to help. We are thrilled to have you with us and cannot wait to see your success!');
+      await addNotification(createdUser.id, 'Welcome to Finomax', 'Welcome aboard! Begin your journey with Finomax, unlock exciting rewards, and connect with our vibrant community. Our support team is always here to help. We are thrilled to have you with us and cannot wait to see your success!');
            
 return res.status(201).json({ message: "User registered successfully!", username });
 
@@ -312,16 +312,11 @@ const sendForgotOtp = async (req, res) => {
 
 
 const sendRegisterOtp = async (req, res) => {
-  console.log("📧 Attempting to send email...");
-  console.log(req.body);
 try {
   const { email } = req.body;
-
   if (!email) {
     return res.status(400).json({ message: "Email is required!" });
   }
-
-
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const created_at = new Date();
 
@@ -333,7 +328,6 @@ try {
       type: sequelize.QueryTypes.DELETE,
     }
   );
-
   // Save new OTP
   await sequelize.query(
     'INSERT INTO password_resets (email, token, created_at) VALUES (?, ?, ?)',
@@ -342,14 +336,10 @@ try {
       type: sequelize.QueryTypes.INSERT,
     }
   );
-      
-       const emailSent = await sendEmail(email, "Your One-Time Password", {
+   const emailSent = await sendEmail(email, "Your One-Time Password", {
             name:"User",
             code: otp       
            });
-
-
-
   return res.status(200).json({ success: true, message: "OTP sent to your email!" });
 
 } catch (error) {

@@ -85,13 +85,13 @@ const User = sequelize.define('User', {
 
   power_leg: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
     },
 
 
       vicker_leg: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
     },
 
 

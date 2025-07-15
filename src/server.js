@@ -3,7 +3,6 @@ require('dotenv').config();
 
 // Import required modules
 const express = require('express');
-const helmet = require('helmet');
 const cors = require('cors');
 const sequelize = require('./config/connectDB');
 require('./cron/cronController');  // Load cron jobs
@@ -12,10 +11,9 @@ const authRoutes = require('./routes/web');
 // Create Express app
 const app = express();
 // Middleware
-app.use(helmet());
+
 app.use(cors({
   origin:  "http://localhost:3000",
-  // process.env.ALLOWED_ORIGINS.split(',')
   credentials: true
 }));
 app.use(express.json());
