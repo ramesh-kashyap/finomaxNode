@@ -172,6 +172,93 @@ async function getPercentage(vipLevel) {
     }
 }
 
+async function getCapping(user_id) {
+    try {
+        const user = await User.findByPk(user_id);
+        if (!user) return 0;
+        const userPackage = user.package;
+        const directCount = await User.count({
+            where: { sponsor: user.id,
+                active_status: "Active",
+                package: {[Op.gte]:userPackage}
+             }
+        });
+        if (directCount >= 15) {
+            return 5; 
+        } else if (directCount >= 10) {
+            return 4;
+        } else if (directCount >= 5) {
+            return 3;
+        } else {
+            return 2;
+        }
+    } catch (error) {
+        console.error("Error getting VIP status:", error);
+        return 0;
+    }
+}
+
+
+
+
+
+
+  async function getDeposit(userId) {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return 0;
+
+   const investmentRaw = await Investment.sum('amount', {
+          where: { user_id: userId, status: 'Active' }
+        }); 
+
+    const investment     = Number(investmentRaw ?? 0);
+    // 3) Now the math will never be NaN
+    const totalBalance = investment;
+
+    // console.log("Balance:", investmentRaw);
+    return totalBalance.toFixed(3);
+  }
+  catch (error) {
+    console.error("Error in getBalance:", error);
+    return 0;
+  }
+}
+
+async function applyGlobalCapping(user_id, amount) {
+    const ROI_CAP_MULTIPLIER = await getCapping(user_id);;
+
+    const user = await User.findOne({ where: { id: user_id } });
+    if (!user) return 0;
+
+    const totalIncome = await Income.sum('comm', {
+        where: { user_id }
+    });
+
+    const maxIncome = (user.package * ROI_CAP_MULTIPLIER);
+
+    if (totalIncome >= maxIncome) return 0;
+
+    const remaining = maxIncome - totalIncome;
+    return (amount > remaining) ? remaining : amount;
+}
+async function getGlobalCapping(user_id, amount) {
+    const ROI_CAP_MULTIPLIER = await getCapping(user_id);;
+
+    const user = await User.findOne({ where: { id: user_id } });
+    if (!user) return 0;
+
+    const totalIncome = await Income.sum('comm', {
+        where: { user_id }
+    });
+
+    const maxIncome = (user.package * ROI_CAP_MULTIPLIER);
+
+    // if (totalIncome >= maxIncome) return 0;
+
+    // const remaining = maxIncome - totalIncome;
+    return maxIncome;
+}
 
 async function getQuantifition(vipLevel) {
     try {
@@ -281,29 +368,28 @@ async function addLevelIncome(userId, amount) {
             }
 
             // Define multipliers for different VIP levels
-            const multipliers = {
-                1: [8, 2, 1],
-                2: [10, 3, 2],
-                3: [12, 4, 2 ],
-                4: [14, 6, 4],
-            };
-            const currentMultipliers = multipliers[vipLevel] || [8, 2, 1]; // Default to VIP 1 multipliers
+            
+            const currentMultipliers =[10, 6, 4, 2 , 1]; // Default to VIP 1 multipliers
 
             let commission = 0;
-            if (sponsorStatus === "Active" && vipLevel >= 1) {
+            if (sponsorStatus === "Active" && vipLevel >= 2) {
                 if (cnt === 1) commission = baseAmount * currentMultipliers[0];
                 if (cnt === 2) commission = baseAmount * currentMultipliers[1];
                 if (cnt === 3) commission = baseAmount * currentMultipliers[2];
+                if (cnt === 4) commission = baseAmount * currentMultipliers[3];
+                if (cnt === 5) commission = baseAmount * currentMultipliers[4];
               
             }
-            if (sponsorId && cnt <= 3 && commission > 0) {
+
+              let cappinAmount = await applyGlobalCapping(sponsorDetails.id,commission);
+            if (sponsorId && cnt <= 5 && cappinAmount > 0) {
                 // Insert income record
                 await Income.create({
                     user_id: sponsorDetails.id,
                     user_id_fk: sponsorDetails.username,
                     amt: amount,
-                    comm: commission,
-                    remarks: "Team Commission",
+                    comm: cappinAmount,
+                    remarks: "Over Ride Income",
                     level: cnt,
                     rname,
                     fullname,
@@ -312,7 +398,7 @@ async function addLevelIncome(userId, amount) {
 
                 // Update user balance
                 await User.update(
-                    { userbalance: sponsorDetails.userbalance + commission },
+                    { userbalance: sponsorDetails.userbalance + cappinAmount },
                     { where: { id: sponsorDetails.id } }
                 );
             }
@@ -329,4 +415,4 @@ async function addLevelIncome(userId, amount) {
 }
 
 
-module.exports = { getVip, myLevelTeamCount, getBalance,getDeposit,getPercentage,addLevelIncome,sendEmail ,getQuantifition,sendEmailRegister};
+module.exports = { getVip,getCapping,getGlobalCapping, myLevelTeamCount, getBalance,getDeposit,getPercentage,addLevelIncome,sendEmail ,getQuantifition,sendEmailRegister,applyGlobalCapping};

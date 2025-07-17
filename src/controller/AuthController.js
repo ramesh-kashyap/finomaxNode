@@ -48,7 +48,7 @@ const register = async (req, res) => {
         }
   
         // Generate username & transaction password
-        const username = "ZY"+Math.floor(100000 + Math.random() * 900000); 
+        const username = "FM"+Math.floor(100000 + Math.random() * 900000); 
         const tpassword = Math.random().toString(36).substring(2, 8);
   
         // Hash passwords
@@ -312,11 +312,16 @@ const sendForgotOtp = async (req, res) => {
 
 
 const sendRegisterOtp = async (req, res) => {
+  console.log("📧 Attempting to send email...");
+  console.log(req.body);
 try {
   const { email } = req.body;
+
   if (!email) {
     return res.status(400).json({ message: "Email is required!" });
   }
+
+
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const created_at = new Date();
 
@@ -328,6 +333,7 @@ try {
       type: sequelize.QueryTypes.DELETE,
     }
   );
+
   // Save new OTP
   await sequelize.query(
     'INSERT INTO password_resets (email, token, created_at) VALUES (?, ?, ?)',
@@ -336,10 +342,14 @@ try {
       type: sequelize.QueryTypes.INSERT,
     }
   );
-   const emailSent = await sendEmail(email, "Your One-Time Password", {
+      
+       const emailSent = await sendEmail(email, "Your One-Time Password", {
             name:"User",
             code: otp       
            });
+
+
+
   return res.status(200).json({ success: true, message: "OTP sent to your email!" });
 
 } catch (error) {

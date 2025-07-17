@@ -12,7 +12,7 @@ const {
 } = require('../models');
 
 const { Op } = require('sequelize');
-const { getVip,getBalance,addLevelIncome,getQuantifition} = require("../services/userService");
+const { getVip,applyGlobalCapping,getBalance,addLevelIncome,getQuantifition} = require("../services/userService");
 
 
 
@@ -125,10 +125,12 @@ const stopTrade = async (req, res) => {
     contract.c_status = -1;
     await contract.save();
     const nowTS = moment().format('YYYY-MM-DD HH:mm:ss');
+    const cappinAmount = await applyGlobalCapping(user.id, contract.profit);
+    if(cappinAmount>0){
     // Record income
     const incomeData = {
       remarks: 'Order Revenue',
-      comm: contract.profit,
+      comm: cappinAmount,
       amt: contract.c_ref,
       invest_id: contract.id,
       level: 0,
@@ -141,12 +143,14 @@ const stopTrade = async (req, res) => {
     await Income.create(incomeData);
 
     // Add Team Commission
-    await addLevelIncome(user.id, contract.profit);
+    await addLevelIncome(user.id, cappinAmount);
+
+  }
 
     // Return success response
     return res.json({
       status: true,
-      profit: contract.profit
+      profit: cappinAmount
     });
 
   } catch (error) {
@@ -294,7 +298,8 @@ const tradeOnJson = async (req, res) => {
     const refPool = uStr * 0.3 * pct;
     const nowTS = moment().format('YYYY-MM-DD HH:mm:ss');
     // cap final-trade ROI
-
+    
+ 
  
     
     if (todayCount === quantifiable - 1) {
@@ -308,6 +313,19 @@ const tradeOnJson = async (req, res) => {
         { where: { id: user.id } }
       );
     }
+
+  const cappinRead = await applyGlobalCapping(user.id,profit);
+
+  // console.log(cappinRead);
+  
+    if (cappinRead<=0) {
+       return res.json({
+        success: false,
+        code: 'NO_TRADES_LEFT',
+        message: 'You have reached your capping limit. Please recharge your account to continue earning'
+      });
+    }
+
 
     // 1️⃣1️⃣ Insert the trade
     const contract = await Contract.create({

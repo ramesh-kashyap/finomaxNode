@@ -13,7 +13,7 @@ const Investment = require('../models/Investment');
 const crypto = require('crypto');
 const Notification = require('../models/Notification');
 const { addNotification } = require('../helper/helper');
-const { getBalance ,sendEmail } = require("../services/userService");
+const { getBalance ,sendEmail, getCapping,applyGlobalCapping,getGlobalCapping } = require("../services/userService");
 const moment = require('moment');
 const { Op } = require('sequelize');
 const logger = require("../../utils/logger");
@@ -42,13 +42,15 @@ const available_balance = async (req, res) => {
   const incomeInfo = async (req, res) => {
     try {
       const userId = req.user?.id;
-  
+      if (!userId) {
+      return res.status(200).json({ success: false, message: "User not authenticated!" });
+    }
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not found!" });
+    }  
       const startOfDay = moment().startOf('day').toDate();
       const endOfDay = moment().endOf('day').toDate();
-      
-    
-      
-
       if (!userId) {
         return res.status(200).json({success: false, message: "User not authenticated!" });
       }
@@ -60,8 +62,6 @@ const available_balance = async (req, res) => {
       [Op.between]: [startOfDay, endOfDay],
     } },
        });
-       
-
         const totalIncome = await Income.sum('comm', {
           where: { user_id: userId},
        });
@@ -79,7 +79,7 @@ const available_balance = async (req, res) => {
       [Op.between]: [startOfDay, endOfDay],
     }},
        });
-
+     const cappinAmount = await getGlobalCapping(user.id, user.package);
        const response = {
         teamIncome : teamIncome,
         todayTeamIncome:todayTeamIncome, 
@@ -87,6 +87,7 @@ const available_balance = async (req, res) => {
         todayTotalIncome: todayTotalIncome,
         tradingIncome: tradingIncome,
         todayTradingIncome: todayTradingIncome,
+        cappingIncome:cappinAmount,
        }
        
       
@@ -100,7 +101,37 @@ const available_balance = async (req, res) => {
       return res.status(200).json({success: false, message: "Internal Server Error" });
     }
   };
-  
+ const depositInfo = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "User not authenticated!" });
+    }
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not found!" });
+    }
+    const withdraw = await Withdraw.sum('amount', {
+  where: {
+    user_id: userId,
+    status: 'Approved'  // Make sure it's a string unless it's a constant variable
+  }
+});
+
+const twith = withdraw || 0;
+    const userPackage = user.package;
+    return res.status(200).json({
+      success: true,
+      data: { package: userPackage, withdraw:twith}
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Something went wrong!" });
+  }
+};
+
+
   const getAvailableBalance = async (userId) => {
     if (!userId) {
       throw new Error("User not authenticated");
@@ -1709,13 +1740,16 @@ const qualityLevelTeam = async (userId, level = 3) => {
  
     const user = await User.findOne({ where: { id: userId } });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found!" });
+      return res.status(200).json({ success: false, message: "User not found!" });
     }
   const nowTS = moment().format('YYYY-MM-DD HH:mm:ss');
-    // ✅ Correct usage of Income.create
+  const cappinAmount = await applyGlobalCapping(user.id, taskReward);
+  if(cappinAmount<=0){
+    return 0;
+  }    // ✅ Correct usage of Income.create
     const taskIncome = await Income.create({
       user_id: userId,
-      comm: taskReward,
+      comm: cappinAmount,
       amt: taskReward,
       user_id_fk: user.username,
       remarks: "Rapid Rise Bonus",
@@ -1737,8 +1771,7 @@ async function checkClaimed(req, res) {
   const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: "User not authenticated!" });
-    }
- 
+    } 
     const user = await User.findOne({ where: { id: userId } });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found!" });
@@ -1809,10 +1842,9 @@ async function checkClaimed(req, res) {
       where: {
         user_id: user.id,
         remarks: "Rapid Rise Bonus",
-        comm: tier.bonus, // Adjust if you're using another field
+        amt: tier.bonus, // Adjust if you're using another field
       },
     });
- 
     results.push({
       // tier: `Team of ${tier.teamSize} in ${tier.days} days`,
       team:tier.teamSize,
@@ -1863,7 +1895,7 @@ async function checkClaimed(req, res) {
       where: {
         user_id: user.id,
         remarks: "Community Building Reward",
-        comm: tier.bonus, // Adjust if you're using another fiel
+        amt: tier.bonus, // Adjust if you're using another fiel
       },
     });
  
@@ -1898,10 +1930,14 @@ async function checkClaimed(req, res) {
  
      const nowTS = moment().format('YYYY-MM-DD HH:mm:ss');
           // ✅ Correct usage of Income.create
+          let cappinAmount = await applyGlobalCapping(user.id, VipReward);
+          if(cappinAmount<=0){
+         return 0;
+  } 
           const taskIncome = await Income.create({
             user_id: userId,
             user_id_fk: user.username,
-            comm: VipReward,
+            comm: cappinAmount,
             amt: VipReward,
             remarks: "Community Building Reward",
              ttime:      nowTS
@@ -1967,4 +2003,4 @@ const GetPowerTeam = async (req, res) => {
 };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms,GetPowerTeam,get_comm};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms,GetPowerTeam,get_comm,depositInfo};

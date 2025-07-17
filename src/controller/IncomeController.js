@@ -13,11 +13,10 @@ const Investment = require('../models/Investment');
 const crypto = require('crypto');
 const Notification = require('../models/Notification');
 const { addNotification } = require('../helper/helper');
-const { getBalance ,sendEmail } = require("../services/userService");
+const { getBalance ,sendEmail, getCapping,applyGlobalCapping,} = require("../services/userService");
 const moment = require('moment');
 const { Op } = require('sequelize');
 const logger = require("../../utils/logger");
-
 const rapidrice = async (req, res) => {
   try {
     const userId = req.body.userId || req.query.userId;

@@ -28,6 +28,7 @@ router.get('/fetchwallet', authMiddleware, UserController.fetchwallet);
 router.get('/dynamic-upi-callback', UserController.dynamicUpiCallback);
 router.get('/availbal', authMiddleware, UserController.available_balance);
 router.get('/incomeInfo', authMiddleware, UserController.incomeInfo);
+router.get('/depositInfo', authMiddleware, UserController.depositInfo);
 router.get('/withreq', authMiddleware, UserController.withreq);
 router.post('/sendotp', authMiddleware, UserController.sendotp);
 router.post('/process-withdrawal', authMiddleware, UserController.processWithdrawal);
@@ -35,6 +36,7 @@ router.post('/save-address/:networkType', authMiddleware,UserController.saveWall
 
 
 router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
+router.get('/get_vip', authMiddleware,tradeController.get_vip);
 router.get('/get_comm', authMiddleware,UserController.get_comm);
 router.get('/close-trade', authMiddleware,tradeController.stopTrade);
 router.get('/fetchtrade', authMiddleware, tradeController.tradecount);
