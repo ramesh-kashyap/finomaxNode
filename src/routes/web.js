@@ -33,7 +33,7 @@ router.get('/withreq', authMiddleware, UserController.withreq);
 router.post('/sendotp', authMiddleware, UserController.sendotp);
 router.post('/process-withdrawal', authMiddleware, UserController.processWithdrawal);
 router.post('/save-address/:networkType', authMiddleware,UserController.saveWalletAddress);
-
+router.post('/confirmDeposit', authMiddleware, UserController.confirmDeposit);
 
 router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
 router.get('/get_vip', authMiddleware,tradeController.get_vip);

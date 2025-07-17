@@ -378,7 +378,67 @@ const fetchwallet = async (req, res) => {
   }
 };
 
+  
+const confirmDeposit = async (req, res) => {
+    try {
+      
+      const user = req.user; // Authenticated user
+      if (!user.email) {
+        return res.status(400).json({ error: "Bind your email first from settings" });
+      }
+  
+      const { amount, method } = req.body;
+      const amountTotal = amount;
+  
+      // Determine Payment Mode
+      let paymentMode = method === "USDT BEP20" ? "bep20/usdt" : "trc20/usdt";
+      let wallet = method === "USDT BEP20" ? "0x0781C21f44a81f9aBb25AEDB935Ff909272e87b3" : "TMLTxoLZWbgXBf8iNhXtMkmbtLCwLQiq5w";
+         logger.info('Wallet: ' + wallet);
+  
+      // Generate invoice number
+      const invoice = Math.floor(1000000 + Math.random() * 9000000).toString();
+      const refid = user.username;
+      
+      const response = await axios.get('https://api.cryptapi.io/'+paymentMode+'/create/?callback=https://api.hypermesh.io/api/auth/cryptapi-upi-callback?refid='+refid+'&address='+wallet+'&pending=0&confirmations=1&email=rameshkashyap8801@gmail.com&post=0&priority=default&multi_token=0&multi_chain=0&convert=0');
+      // console.log(response.data);
+      
 
+      if (response.data.status === "success") {
+        const resultData = response.data;
+       const qrCode = await getQrCode(resultData, amountTotal,paymentMode);
+
+
+        return res.status(200).json({ success:true,
+          walletAddress: resultData.address_in,
+          method,
+          qr_code: qrCode.qr_code,
+          amount: amountTotal,
+        });
+      } else {
+        return res.status(400).json({ error: response.data });
+      }
+    } catch (error) {
+
+      return res.status(500).json({success:false, error: "Internal server error", details: error.message });
+    }
+  };
+  async function getQrCode(data,amount,paymentMode) {
+  const query = new URLSearchParams({
+    address: data.address_in,
+    value: amount,
+    size: '512'
+  }).toString();
+
+  const url = `https://api.cryptapi.io/${paymentMode}/qrcode/?${query}`;
+  try {
+    const response = await axios.get(url);
+    const result = response.data;
+    return result;
+  } catch (error) {
+    console.error('Error fetching QR code:', error.response?.data || error.message);
+    return null;
+  }
+}
     
   const withfatch = async (req, res) => { 
     try {
@@ -1484,9 +1544,10 @@ const totalRef = async (req, res) => {
       const balance = await getAvailableBalance(userId);
       const checkavail = await myqualityTeam(userId);
       const uppervip = await qualityLevelTeam(userId);
+      const deposit = user.package;
       // console.log(checkavail);
       const memberCount = await User.count({ where: { sponsor: userId , active_status: "Active" } });
-      return res.status(200).json({success: true, sponsor: checkavail, directmembers:memberCount, balance: balance, checkupper:uppervip});
+      return res.status(200).json({success: true, sponsor: checkavail, directmembers:memberCount, balance: balance, checkupper:uppervip, deposit:deposit});
     } catch (error) {
       console.error("Something went wrong:", error);
       return res.status(200).json({success: false, message: "Internal Server Error" });
@@ -2003,4 +2064,4 @@ const GetPowerTeam = async (req, res) => {
 };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms,GetPowerTeam,get_comm,depositInfo};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimRRB,checkClaimed,ClaimVip,vipTerms,GetPowerTeam,get_comm,depositInfo, confirmDeposit};
