@@ -12,7 +12,7 @@ const {
 } = require('../models');
 
 const { Op } = require('sequelize');
-const { getVip,getBalance,addLevelIncome,getQuantifition} = require("../services/userService");
+const { getVip,getBalance,addLevelIncome,getQuantifition,getDeposit} = require("../services/userService");
 
 
 
@@ -194,7 +194,7 @@ const tradeOnJson = async (req, res) => {
 
   
   
-    const balance   = await getBalance(user.id);
+    const balance   = await getDeposit(user.id);
     // console.log('balance'+balance);
 
     if (balance < 50) {
